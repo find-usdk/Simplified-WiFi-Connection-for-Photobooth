@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wi-Fi Kiosk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #f39200, #282828);
+    color: white;
+    text-align: center;
+    padding: 20px;
+    position: relative;
+  }
+  header {
+    padding: 20px;
+  }
+  header img {
+    max-height: 100px;
+    width: auto;
+  }
+  p.instruction {
+    font-size: 1.2em;
+    margin: 20px auto;
+    max-width: 500px;
+    line-height: 1.5em;
+    background: rgba(0,0,0,0.5);
+    padding: 15px;
+    border-radius: 15px;
+  }
+  select, input {
+    font-size: 1.3em;
+    padding: 15px;
+    margin: 15px auto;
+    width: 80%;
+    max-width: 400px;
+    display: block;
+    border-radius: 12px;
+    border: none;
+  }
+  button {
+    display: block;
+    font-size: 1.5em;
+    padding: 20px;
+    margin: 20px auto;
+    border-radius: 15px;
+    border: none;
+    background: #444;
+    color: white;
+    width: 80%;
+    max-width: 400px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  button:hover {
+    background: #555;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+  button:active {
+    background: #666;
+    transform: scale(0.98);
+  }
+  #status {
+    font-size: 1.3em;
+    margin: 30px auto;
+    padding: 15px 25px;
+    border-radius: 15px;
+    display: inline-block;
+    min-width: 250px;
+    background: #333;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    transition: background 0.3s ease;
+  }
+  .signal-bar {
+    display: inline-block;
+    width: 8px;
+    margin: 0 1px;
+    background: #555;
+    border-radius: 2px;
+    vertical-align: bottom;
+  }
+  #home-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 100px;
+    margin: 0;
+    padding: 10px;
+    font-size: 1em;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  #home-button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  }
+  #home-button:active {
+    background: rgba(255, 255, 255, 0.35);
+    transform: scale(0.98);
+  }
+</style>
+</head>
+<body>
+<header>
+  <img src="logo.png" alt="Logo">
+</header>
+
+<p class="instruction">
+  Connect to the internet by selecting your Wi-Fi network from the dropdown below.<br>
+  Enter the password and click "Connect".<br>
+  Once connected, you can start the selfie machine with "Photobooth".
+</p>
+
+<button id="home-button" onclick="location.href='/'">Home</button>
+
+<select id="wifi-list">
+  <option>Loading networks...</option>
+</select>
+
+<input type="password" id="wifi-password" placeholder="Enter password">
+
+<button onclick="connectWifi()">Connect</button>
+<button onclick="location.href='http://localhost:8000'">📸 Photobooth</button>
+
+<div id="status">Status: Unknown</div>
+
+<script>
+function getSignalBars(strength) {
+  let bars = 4;
+  let activeBars = Math.ceil(strength / 25);
+  let color = strength >= 75 ? '#f39200' :
+              strength >= 50 ? '#ffb84d' :
+              strength >= 25 ? '#ffaa33' : '#ff6600';
+  let html = '';
+  for (let i = 1; i <= bars; i++) {
+    html += `<span class="signal-bar" style="height:${i*8}px; background:${i <= activeBars ? color : '#555'}"></span>`;
+  }
+  return html;
+}
+
+async function scanWifi() {
+  try {
+    const res = await fetch("/api/scan");
+    const networks = await res.json();
+    const select = document.getElementById("wifi-list");
+    select.innerHTML = "";
+    if (!networks.length) {
+      select.innerHTML = '<option>No networks found</option>';
+      return;
+    }
+    networks.forEach(net => {
+      select.innerHTML += `<option value="${net.ssid}">${net.ssid} ${getSignalBars(net.signal)}</option>`;
+    });
+  } catch (e) {
+    document.getElementById("status").innerText = "⚠️ Unable to fetch networks";
+  }
+}
+
+async function connectWifi() {
+  const ssid = document.getElementById("wifi-list").value;
+  const password = document.getElementById("wifi-password").value;
+  if (!ssid || !password) {
+    alert("Please select a network and enter the password");
+    return;
+  }
+  try {
+    const res = await fetch("/api/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ssid, password })
+    });
+    const text = await res.text();
+    alert(text);
+    updateStatus();
+  } catch (e) {
+    alert("Connection error");
+  }
+}
+
+async function updateStatus() {
+  try {
+    const res = await fetch("/api/status");
+    const data = await res.json();
+    const statusDiv = document.getElementById("status");
+    if (data.connected) {
+      statusDiv.innerText = "✅ Connected to " + (data.ssid || "Unknown");
+      statusDiv.style.background = "#282828";
+    } else {
+      statusDiv.innerText = "❌ Not connected";
+      statusDiv.style.background = "#444";
+    }
+  } catch (e) {
+    const statusDiv = document.getElementById("status");
+    statusDiv.innerText = "⚠️ Status could not be retrieved";
+    statusDiv.style.background = "#555";
+  }
+}
+
+scanWifi();
+updateStatus();
+setInterval(updateStatus, 5000);
+</script>
+</body>
+</html>

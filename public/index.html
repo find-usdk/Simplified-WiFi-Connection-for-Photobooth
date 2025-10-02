@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wi-Fi Kiosk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #f39200, #282828);
+    color: white;
+    text-align: center;
+    padding: 20px;
+  }
+  header {
+    padding: 20px;
+  }
+  header img {
+    max-height: 100px;
+    width: auto;
+    /* Fjernet box-shadow og border-radius */
+  }
+  p.instruction {
+    font-size: 1.2em;
+    margin: 20px auto;
+    max-width: 500px;
+    line-height: 1.5em;
+    background: rgba(0,0,0,0.5);
+    padding: 15px;
+    border-radius: 15px;
+  }
+  button {
+    display: block;
+    font-size: 1.5em;
+    padding: 20px;
+    margin: 20px auto;
+    border-radius: 15px;
+    border: none;
+    background: #444;
+    color: white;
+    width: 80%;
+    max-width: 400px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  button:hover {
+    background: #555;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+  button:active {
+    background: #666;
+    transform: scale(0.98);
+  }
+  #status {
+    font-size: 1.3em;
+    margin: 30px auto;
+    padding: 15px 25px;
+    border-radius: 15px;
+    display: inline-block;
+    min-width: 250px;
+    background: #333;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    transition: background 0.3s ease;
+  }
+</style>
+</head>
+<body>
+<header>
+  <img src="logo.png" alt="Logo">
+</header>
+
+<p class="instruction">
+  To use the Photobooth selfie machine with QR sharing and email, it must be connected to the internet.<br><br>
+  Press 'Search for Wi-Fi' to connect to a Wi-Fi network.<br>
+  Then press 'Photobooth' to start the selfie machine once it is connected to the internet.
+</p>
+
+<button onclick="location.href='wifi.html'">🔍 Search for Wi-Fi</button>
+<button onclick="location.href='http://localhost:8000'">📸 Photobooth</button>
+
+<div id="status">Status: Unknown</div>
+
+<script>
+async function updateStatus() {
+  try {
+    const res = await fetch("/api/status");
+    const data = await res.json();
+    const statusDiv = document.getElementById("status");
+
+    if (data.connected) {
+      statusDiv.innerText = "✅ Connected to " + (data.ssid || "Unknown");
+      statusDiv.style.background = "#282828"; // dark gray
+    } else {
+      statusDiv.innerText = "❌ Not connected";
+      statusDiv.style.background = "#444"; // medium gray
+    }
+  } catch (e) {
+    const statusDiv = document.getElementById("status");
+    statusDiv.innerText = "⚠️ Status could not be retrieved";
+    statusDiv.style.background = "#555"; // light gray
+  }
+}
+
+updateStatus();
+setInterval(updateStatus, 5000);
+</script>
+</body>
+</html>
