@@ -10,10 +10,10 @@ Take a look in the demo video: https://youtube.com/shorts/Aa4wyDOeO00
 Installation instructions:
 
  - Copy the folder and files to this path: C:\photobooth-data\wifi-kiosk\
- - Run these 3 commands from Powershell
-   pip install flask
-   pip install pywifi
-   pip install comtypes
+ - Run these 3 commands from Powershell:
+ - pip install flask
+ - pip install pywifi
+ - pip install comtypes
 
 
 Start up:
